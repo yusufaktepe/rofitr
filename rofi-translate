@@ -1,0 +1,18 @@
+#!/bin/sh
+# Translate text using rofi.
+# Requires: rofi, crow-translate
+# ---
+# 2019 Yusuf Aktepe <yusuf@yusufaktepe.com>
+# https://github.com/yusufaktepe/dotfiles
+# ---
+
+TARGET="tr+en"
+
+rofi_cmd() { rofi -dmenu -p " translate" -l 0 -width 60 "$@" ;}
+
+input="$(rofi_cmd)"
+
+while [ -n "$input" ]; do
+	result="$(crow -t $TARGET "$input" | sed '/- examples:/Q')"
+	input="$(rofi_cmd -mesg "<span color='#ebdbb2'>$result</span>")"
+done
