@@ -5,14 +5,34 @@
 # 2019 Yusuf Aktepe <yusuf@yusufaktepe.com>
 # https://github.com/yusufaktepe/dotfiles
 # ---
+# Usage:
+#       > source:target text
+#             de:en hallo
+#
+#   If you leave source:target empty, it'll identify the source
+#   and translate it into $TARGET variable below.
+# ---
 
 TARGET="tr+en"
+TRHIST="$XDG_DATA_HOME/rofi/translate.hist"
 
-rofi_cmd() { rofi -dmenu -p " translate" -l 0 -width 60 "$@" ;}
+rofi_cmd() { rofi -dmenu -p " translate" -l 0 -width 60 -yoffset 0 -font "Hack 10" "$@" ;}
 
 input="$(rofi_cmd)"
 
 while [ -n "$input" ]; do
-	result="$(crow -t $TARGET "$input" | sed '/- examples:/Q')"
+	crow_cmd() {
+		case "$input" in
+			??:??*)
+				SOURCE=$(echo "$input" | awk -F':' '{print $1}')
+				TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
+				input=$(echo "$input" | cut -d' ' -f2-)
+				crow -s "$SOURCE" -t "$TARGET" "$input" ;;
+			*)	crow -t "$TARGET" "$input" ;;
+		esac
+	}
+
+	result="$(crow_cmd | sed '/- examples:/Q;/^$/d')"
+	[ -n "$TRHIST" ] && printf '\n#===[__%s__]==#\n\n%s\n' "$(date)" "$result" >> "$TRHIST"
 	input="$(rofi_cmd -mesg "<span color='#ebdbb2'>$result</span>")"
 done
