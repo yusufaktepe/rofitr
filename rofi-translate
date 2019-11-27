@@ -32,7 +32,7 @@ while [ -n "$input" ]; do
 		esac
 	}
 
-	result="$(crow_cmd | sed '/- examples:/Q;/^$/d')"
+	result="$(crow_cmd | sed '/- examples:/Q;/^$/d;s/\&/\&amp\;/g')"
 	[ -n "$TRHIST" ] && printf '\n#===[__%s__]==#\n\n%s\n' "$(date)" "$result" >> "$TRHIST"
 	input="$(rofi_cmd -mesg "<span color='#ebdbb2'>$result</span>")"
 done
