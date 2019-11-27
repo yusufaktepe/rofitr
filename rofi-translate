@@ -8,12 +8,16 @@
 # Usage:
 #       > source:target text
 #             de:en hallo
+#       > :target text
+#               :es hello world!
 #
-#   If you leave source:target empty, it'll identify the source
-#   and translate it into $TARGET variable below.
+#   If you leave source empty, it'll identify the source
+#   and translate it into :target.
+#   If you leave both empty, default variables will be used.
 # ---
 
-TARGET="tr+en"
+SOURCE="en"
+TARGET="tr"
 TRHIST="$XDG_DATA_HOME/rofi/translate.hist"
 
 rofi_cmd() { rofi -dmenu -p " translate" -l 0 -width 60 -yoffset 0 -font "Hack 10" "$@" ;}
@@ -28,7 +32,11 @@ while [ -n "$input" ]; do
 				TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
 				input=$(echo "$input" | cut -d' ' -f2-)
 				crow -s "$SOURCE" -t "$TARGET" "$input" ;;
-			*)	crow -t "$TARGET" "$input" ;;
+			:??*)
+				TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
+				input=$(echo "$input" | cut -d' ' -f2-)
+				crow -t "$TARGET" "$input" ;;
+			*)	crow -s "$SOURCE" -t "$TARGET" "$input" ;;
 		esac
 	}
 
