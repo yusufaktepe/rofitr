@@ -10,6 +10,8 @@
 #             de:en hallo
 #       > :target text
 #               :es hello world!
+#       > !
+#         to select and translate from history
 #
 #   If you leave source empty, it'll identify the source
 #   and translate it into :target.
@@ -18,29 +20,33 @@
 
 SOURCE="en"
 TARGET="tr"
-TRHIST="$XDG_DATA_HOME/rofi/translate.hist"
+HIST="$XDG_DATA_HOME/rofi/rofitr_history"
 
-rofi_cmd() { rofi -dmenu -p " translate" -l 0 -width 60 -yoffset 0 -font "Hack 10" "$@" ;}
+rofi_cmd() { rofi -dmenu -width 60 -yoffset 0 -font "Hack 10" "$@" ;}
 
-[ -n "$*" ] && input="$*" || input="$(rofi_cmd)"
+[ -n "$*" ] && input="$*" || input="$(rofi_cmd -p " translate" -l 0)"
 
 while [ -n "$input" ]; do
-	crow_cmd() {
-		case "$input" in
-			??:??*)
-				SOURCE=$(echo "$input" | awk -F':' '{print $1}')
-				TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
-				input=$(echo "$input" | cut -d' ' -f2-)
-				crow -s "$SOURCE" -t "$TARGET" "$input" ;;
-			:??*)
-				TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
-				input=$(echo "$input" | cut -d' ' -f2-)
-				crow -t "$TARGET" "$input" ;;
-			*)	crow -s "$SOURCE" -t "$TARGET" "$input" ;;
-		esac
-	}
+	if [ "$input" = "!" ]; then
+		input="$(tac "$HIST" | rofi_cmd -p " history" -l 20)"
+	else
+		crow_cmd() {
+			case "$input" in
+				??:??*)
+					SOURCE=$(echo "$input" | awk -F':' '{print $1}')
+					TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
+					input=$(echo "$input" | cut -d' ' -f2-)
+					crow -s "$SOURCE" -t "$TARGET" "$input" ;;
+				:??*)
+					TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
+					input=$(echo "$input" | cut -d' ' -f2-)
+					crow -t "$TARGET" "$input" ;;
+				*)	crow -s "$SOURCE" -t "$TARGET" "$input" ;;
+			esac
+		}
 
-	result="$(crow_cmd | sed '/- examples:/Q;/^$/d;s/\&/\&amp\;/g')"
-	[ -n "$TRHIST" ] && printf '\n#===[__%s__]==#\n\n%s\n' "$(date)" "$result" >> "$TRHIST"
-	input="$(rofi_cmd -mesg "<span color='#ebdbb2'>$result</span>")"
+		result="$(crow_cmd | sed '/- examples:/Q;/^$/d;s/\&/\&amp\;/g')"
+		sed -i "/^$input$/d" "$HIST" && printf '%s\n' "$input" >> "$HIST"
+		input="$(rofi_cmd -p " translate" -l 0 -mesg "<span color='#ebdbb2'>$result</span>")"
+	fi
 done
