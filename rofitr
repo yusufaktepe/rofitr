@@ -12,6 +12,10 @@
 #               :es hello world!
 #       > !
 #         to select and translate from history
+#       > !d
+#         to select and remove from history
+#       > !dd
+#         to clear history
 #
 #   If you leave source empty, it'll identify the source
 #   and translate it into :target.
@@ -27,26 +31,29 @@ rofi_cmd() { rofi -dmenu -width 60 -yoffset 0 -font "Hack 10" "$@" ;}
 [ -n "$*" ] && input="$*" || input="$(rofi_cmd -p " translate" -l 0)"
 
 while [ -n "$input" ]; do
-	if [ "$input" = "!" ]; then
-		input="$(tac "$HIST" | rofi_cmd -p " history" -l 20)"
-	else
-		crow_cmd() {
-			case "$input" in
-				??:??*)
-					SOURCE=$(echo "$input" | awk -F':' '{print $1}')
-					TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
-					input=$(echo "$input" | cut -d' ' -f2-)
-					crow -s "$SOURCE" -t "$TARGET" "$input" ;;
-				:??*)
-					TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
-					input=$(echo "$input" | cut -d' ' -f2-)
-					crow -t "$TARGET" "$input" ;;
-				*)	crow -s "$SOURCE" -t "$TARGET" "$input" ;;
-			esac
-		}
+	case "$input" in
+		!)	input="$(tac "$HIST" | rofi_cmd -p " history" -l 20)" ;;
+		!d)	pattern="$(tac "$HIST" | rofi_cmd -p " delete" -l 20)"
+			case "$pattern" in *) sed -i "/^$pattern$/d" "$HIST" && input="h"; esac ;;
+		!dd)	printf '' > "$HIST" && input="$(rofi_cmd -p " translate" -l 0)" ;;
+		*)
+			crow_cmd() {
+				case "$input" in
+					??:??*)
+						SOURCE=$(echo "$input" | awk -F':' '{print $1}')
+						TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
+						input=$(echo "$input" | cut -d' ' -f2-)
+						crow -s "$SOURCE" -t "$TARGET" "$input" ;;
+					:??*)
+						TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
+						input=$(echo "$input" | cut -d' ' -f2-)
+						crow -t "$TARGET" "$input" ;;
+					*)	crow -s "$SOURCE" -t "$TARGET" "$input" ;;
+				esac
+			}
 
-		result="$(crow_cmd | sed '/- examples:/Q;/^$/d;s/\&/\&amp\;/g')"
-		sed -i "/^$input$/d" "$HIST" && printf '%s\n' "$input" >> "$HIST"
-		input="$(rofi_cmd -p " translate" -l 0 -mesg "<span color='#ebdbb2'>$result</span>")"
-	fi
+			result="$(crow_cmd | sed '/- examples:/Q;/^$/d;s/\&/\&amp\;/g')"
+			sed -i "/^$input$/d" "$HIST" && printf '%s\n' "$input" >> "$HIST"
+			input="$(rofi_cmd -p " translate" -l 0 -mesg "<span color='#ebdbb2'>$result</span>")"
+	esac
 done
