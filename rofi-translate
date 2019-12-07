@@ -22,7 +22,7 @@ TRHIST="$XDG_DATA_HOME/rofi/translate.hist"
 
 rofi_cmd() { rofi -dmenu -p " translate" -l 0 -width 60 -yoffset 0 -font "Hack 10" "$@" ;}
 
-input="$(rofi_cmd)"
+[ -n "$*" ] && input="$*" || input="$(rofi_cmd)"
 
 while [ -n "$input" ]; do
 	crow_cmd() {
