@@ -22,25 +22,37 @@
 #   If you leave both empty, default variables will be used.
 # ---
 
-SOURCE="en"
-TARGET="tr"
+# Default values
+SOURCE="${SOURCE:-en}"
+TARGET="${TARGET:-tr}"
+ENGINE="${ENGINE:-google}"
+# History file
 HIST="$XDG_DATA_HOME/rofi/rofitr_history"
+# Rofi options
+FONT="mono 10"
+WIDTH="60"
+YOFFSET="0"
+LINES="10"
+PROMPT_TR=" translate"
+PROMPT_HIST=" history"
+PROMPT_DEL=" delete"
+COLOR_RESULT="#ebdbb2"
 
-rofi_cmd() { rofi -dmenu -width 60 -yoffset 0 -font "Hack 10" "$@" ;}
+rofi_cmd() { rofi -dmenu -width "$WIDTH" -yoffset "$YOFFSET" -font "$FONT" "$@" ;}
 
-[ -n "$*" ] && input="$*" || input="$(rofi_cmd -p " translate" -l 0)"
+[ -n "$*" ] && input="$*" || input="$(rofi_cmd -p "$PROMPT_TR" -l 0)"
 
 while [ -n "$input" ]; do
 	case "$input" in
-		!)	input="$(tac "$HIST" | rofi_cmd -p " history" -l 20)" ;;
-		!d)	pattern="$(tac "$HIST" | rofi_cmd -p " delete" -l 20)"
+		!)	input="$(tac "$HIST" | rofi_cmd -p "$PROMPT_HIST" -l "$LINES")" ;;
+		!d)	pattern="$(tac "$HIST" | rofi_cmd -p "$PROMPT_DEL" -l "$LINES")"
 			case "$pattern" in
-				!) input="$(rofi_cmd -p " translate" -l 0)" ;;
+				!) input="$(rofi_cmd -p "$PROMPT_TR" -l 0)" ;;
 				!dd) printf '' > "$HIST" && exit 0 ;;
 				"") exit 0 ;;
 				*) sed -i "/^$pattern$/d" "$HIST"
 			esac ;;
-		!dd)	printf '' > "$HIST" && input="$(rofi_cmd -p " translate" -l 0)" ;;
+		!dd)	printf '' > "$HIST" && input="$(rofi_cmd -p "$PROMPT_TR" -l 0)" ;;
 		*)
 			crow_cmd() {
 				case "$input" in
@@ -48,17 +60,17 @@ while [ -n "$input" ]; do
 						SOURCE=$(echo "$input" | awk -F':' '{print $1}')
 						TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
 						input=$(echo "$input" | cut -d' ' -f2-)
-						crow -s "$SOURCE" -t "$TARGET" "$input" ;;
+						crow -e "$ENGINE" -s "$SOURCE" -t "$TARGET" "$input" ;;
 					:??*)
 						TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
 						input=$(echo "$input" | cut -d' ' -f2-)
-						crow -t "$TARGET" "$input" ;;
-					*)	crow -s "$SOURCE" -t "$TARGET" "$input" ;;
+						crow -e "$ENGINE" -t "$TARGET" "$input" ;;
+					*)	crow -e "$ENGINE" -s "$SOURCE" -t "$TARGET" "$input" ;;
 				esac
 			}
 
 			result="$(crow_cmd | sed '/- examples:/Q;/^$/d;s/\&/\&amp\;/g')"
 			sed -i "/^$input$/d" "$HIST" && printf '%s\n' "$input" >> "$HIST"
-			input="$(rofi_cmd -p " translate" -l 0 -mesg "<span color='#ebdbb2'>$result</span>")"
+			input="$(rofi_cmd -p "$PROMPT_TR" -l 0 -mesg "<span color='$COLOR_RESULT'>$result</span>")"
 	esac
 done
