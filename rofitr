@@ -34,7 +34,12 @@ while [ -n "$input" ]; do
 	case "$input" in
 		!)	input="$(tac "$HIST" | rofi_cmd -p " history" -l 20)" ;;
 		!d)	pattern="$(tac "$HIST" | rofi_cmd -p " delete" -l 20)"
-			case "$pattern" in *) sed -i "/^$pattern$/d" "$HIST" && input="h"; esac ;;
+			case "$pattern" in
+				!) input="$(rofi_cmd -p " translate" -l 0)" ;;
+				!dd) printf '' > "$HIST" && exit 0 ;;
+				"") exit 0 ;;
+				*) sed -i "/^$pattern$/d" "$HIST"
+			esac ;;
 		!dd)	printf '' > "$HIST" && input="$(rofi_cmd -p " translate" -l 0)" ;;
 		*)
 			crow_cmd() {
