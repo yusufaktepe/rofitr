@@ -10,12 +10,18 @@
 #             de:en hallo
 #       > :target text
 #               :es hello world!
+#       > !e word
+#         show examples for "word"
+#       > !!
+#         show last translation
+#       > !!e
+#         show examples for last translation
 #       > !
 #         to select and translate from history
 #       > !d
 #         to select and remove from history
-#       > !dd
-#         to clear history
+#         >> !dd
+#            to clear history
 #
 #   If you leave source empty, it'll identify the source
 #   and translate it into :target.
@@ -26,13 +32,15 @@
 SOURCE="${SOURCE:-en}"
 TARGET="${TARGET:-tr}"
 ENGINE="${ENGINE:-google}"
+LOCALE="${LOCALE:-${LANG%_*}}"
 # History file
-HIST="$XDG_DATA_HOME/rofi/rofitr_history"
+HIST="${XDG_DATA_HOME:-~/.local/share}/rofi/$(basename "$0")_history"
 # Rofi options
 FONT="mono 10"
 WIDTH="60"
 YOFFSET="0"
-LINES="10"
+HIST_LINES="15"
+RES_LINES="43"
 PROMPT_TR=" translate"
 PROMPT_HIST=" history"
 PROMPT_DEL=" delete"
@@ -44,32 +52,42 @@ rofi_cmd() { rofi -dmenu -width "$WIDTH" -yoffset "$YOFFSET" -font "$FONT" "$@" 
 
 while [ -n "$input" ]; do
 	case "$input" in
-		!)	input="$(tac "$HIST" | rofi_cmd -p "$PROMPT_HIST" -l "$LINES")" ;;
-		!d)	pattern="$(tac "$HIST" | rofi_cmd -p "$PROMPT_DEL" -l "$LINES")"
+		!)	input="$(tac "$HIST" | rofi_cmd -p "$PROMPT_HIST" -l "$HIST_LINES")"
+			[ "$input" = "!" ] && input="$(rofi_cmd -p "$PROMPT_TR" -l 0)" ;;
+		!!)	input=$(tail -n1 "$HIST") ;;
+		!!e)	input=$(printf "!e %s" "$(tail -n1 "$HIST")") ;;
+		!d)	pattern="$(tac "$HIST" | rofi_cmd -p "$PROMPT_DEL" -l "$HIST_LINES")"
 			case "$pattern" in
 				!) input="$(rofi_cmd -p "$PROMPT_TR" -l 0)" ;;
 				!dd) printf '' > "$HIST" && exit 0 ;;
 				"") exit 0 ;;
 				*) sed -i "/^$pattern$/d" "$HIST"
 			esac ;;
-		!dd)	printf '' > "$HIST" && input="$(rofi_cmd -p "$PROMPT_TR" -l 0)" ;;
 		*)
-			crow_cmd() {
-				case "$input" in
-					??:??*)
-						SOURCE=$(echo "$input" | awk -F':' '{print $1}')
-						TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
-						input=$(echo "$input" | cut -d' ' -f2-)
-						crow -e "$ENGINE" -s "$SOURCE" -t "$TARGET" "$input" ;;
-					:??*)
-						TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
-						input=$(echo "$input" | cut -d' ' -f2-)
-						crow -e "$ENGINE" -t "$TARGET" "$input" ;;
-					*)	crow -e "$ENGINE" -s "$SOURCE" -t "$TARGET" "$input" ;;
+			cleanup() {
+				sedit="s/^[\t]$//;/^$/d;s/\&/\&amp\;/g"
+				case "$1" in
+					ex) sed -e "$sedit" -ne '/- examples:/,$p' | head -n $RES_LINES ;;
+					*) sed -e "$sedit" -e '/- examples:/Q' | head -n $RES_LINES
 				esac
 			}
 
-			result="$(crow_cmd | sed '/- examples:/Q;/^$/d;s/\&/\&amp\;/g')"
+			case "$input" in
+				??:??*)
+					SOURCE=$(echo "$input" | awk -F':' '{print $1}')
+					TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
+					input=$(echo "$input" | cut -d' ' -f2-)
+					result=$(crow -e "$ENGINE" -l "$LOCALE" -s "$SOURCE" -t "$TARGET" "$input" | cleanup) ;;
+				:??*)
+					TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
+					input=$(echo "$input" | cut -d' ' -f2-)
+					result=$(crow -e "$ENGINE" -l "$LOCALE" -t "$TARGET" "$input" | cleanup) ;;
+				!e*)
+					input=$(echo "$input" | cut -d' ' -f2-)
+					result=$(crow -e "$ENGINE" -l "$LOCALE" "$input" | cleanup ex) ;;
+				*)	result=$(crow -e "$ENGINE" -l "$LOCALE" -s "$SOURCE" -t "$TARGET" "$input" | cleanup) ;;
+			esac
+
 			sed -i "/^$input$/d" "$HIST" && printf '%s\n' "$input" >> "$HIST"
 			input="$(rofi_cmd -p "$PROMPT_TR" -l 0 -mesg "<span color='$COLOR_RESULT'>$result</span>")"
 	esac
