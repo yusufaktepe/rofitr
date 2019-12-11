@@ -68,7 +68,7 @@ while [ -n "$input" ]; do
 				sedit="s/^[\t]$//;/^$/d;s/\&/\&amp\;/g"
 				case "$1" in
 					ex) sed -e "$sedit" -ne '/- examples:/,$p' | head -n $RES_LINES ;;
-					*) sed -e "$sedit" -e '/- examples:/Q' | head -n $RES_LINES
+					*) sed -e "$sedit" -e '/- examples:/Q' | sed -z 's/\n/ /' | head -n $RES_LINES
 				esac
 			}
 
