@@ -33,18 +33,37 @@ SOURCE="${SOURCE:-en}"
 TARGET="${TARGET:-tr}"
 ENGINE="${ENGINE:-google}"
 LOCALE="${LOCALE:-${LANG%_*}}"
-# History file
-HIST="${XDG_DATA_HOME:-~/.local/share}/rofi/$(basename "$0")_history"
 # Rofi options
 FONT="mono 10"
 WIDTH="60"
-YOFFSET="0"
+YOFFSET="20"
 HIST_LINES="15"
 RES_LINES="43"
 PROMPT_TR=" translate"
 PROMPT_HIST=" history"
 PROMPT_DEL=" delete"
 COLOR_RESULT="#ebdbb2"
+# History file
+HIST="${XDG_DATA_HOME:-~/.local/share}/rofi/$(basename "$0")_history"
+
+help() {
+cat <<EOF
+# <u>Translate with defaults</u>
+> <span background="#b8bb26" foreground="#1d2021"><b><i>text</i></b></span>
+# <u>Override default SOURCE and TARGET</u>
+> <span background="#b8bb26" foreground="#1d2021"><b>en:es <i>text</i></b></span>
+# <u>Auto-detect SOURCE</u>
+> <span background="#b8bb26" foreground="#1d2021"><b>:en <i>text</i></b></span>
+<s>                                             </s>
+<u>Actions:</u>
+<span foreground="#b8bb26"><b>!e</b></span> <i>word</i> => show examples for "word"
+<span foreground="#b8bb26"><b>!!</b></span>      => show last translation
+<span foreground="#b8bb26"><b>!!e</b></span>     => show examples for last translation
+<span foreground="#b8bb26"><b>!</b></span>       => select and translate from history
+<span foreground="#b8bb26"><b>!d</b></span>      => select and remove from history
+<span foreground="#b8bb26"><b>!dd</b></span>     => clear history (in delete mode)
+EOF
+}
 
 rofi_cmd() { rofi -dmenu -width "$WIDTH" -yoffset "$YOFFSET" -font "$FONT" "$@" ;}
 
@@ -52,6 +71,7 @@ rofi_cmd() { rofi -dmenu -width "$WIDTH" -yoffset "$YOFFSET" -font "$FONT" "$@" 
 
 while [ -n "$input" ]; do
 	case "$input" in
+		"?")	input="$(rofi_cmd -p "Usage" -l 0 -mesg "<span color='$COLOR_RESULT'>$(help)</span>")" ;;
 		!)	input="$(tac "$HIST" | rofi_cmd -p "$PROMPT_HIST" -l "$HIST_LINES")"
 			[ "$input" = "!" ] && input="$(rofi_cmd -p "$PROMPT_TR" -l 0)" ;;
 		!!)	input=$(tail -n1 "$HIST") ;;
