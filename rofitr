@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # Translate text using rofi.
 # Requires: rofi, crow-translate
 # ---
