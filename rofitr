@@ -96,11 +96,13 @@ while [ -n "$input" ]; do
 					SOURCE=$(echo "$input" | awk -F':' '{print $1}')
 					TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
 					input=$(echo "$input" | cut -d' ' -f2-)
-					result=$(crow_cmd -s "${SOURCE:-en}" -t "${TARGET:-tr}" "$input" | cleanup) ;;
+					result=$(crow_cmd -s "${SOURCE:-en}" -t "${TARGET:-tr}" "$input" | cleanup)
+					unset SOURCE TARGET ;;
 				:??*)
 					TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
 					input=$(echo "$input" | cut -d' ' -f2-)
-					result=$(crow_cmd -t "${TARGET:-tr}" "$input" | cleanup) ;;
+					result=$(crow_cmd -t "${TARGET:-tr}" "$input" | cleanup)
+					unset TARGET ;;
 				!e*)
 					input=$(echo "$input" | cut -d' ' -f2-)
 					result=$(crow_cmd "$input" | cleanup ex) ;;
