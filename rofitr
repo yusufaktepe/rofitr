@@ -16,8 +16,9 @@ PROMPT_TR=" translate"
 PROMPT_HIST=" history"
 PROMPT_DEL=" delete"
 COLOR_RESULT="#ebdbb2"
-# History file
-HIST="${XDG_DATA_HOME:-~/.local/share}/rofi/$(basename "$0")_history"
+
+HIST="${XDG_DATA_HOME:-~/.local/share}/rofi/rofitr_history"
+mkdir -p "$(dirname "$HIST")"
 
 help() {
 cat <<EOF
@@ -81,7 +82,7 @@ while [ -n "$input" ]; do
 				*)	result=$(crow -e "$ENGINE" -l "$LOCALE" -s "$SOURCE" -t "$TARGET" "$input" | cleanup) ;;
 			esac
 
-			sed -i "/^$input$/d" "$HIST" && printf '%s\n' "$input" >> "$HIST"
+			sed -i "/^$input$/d" "$HIST"; printf '%s\n' "$input" >> "$HIST"
 			input="$(rofi_cmd -p "$PROMPT_TR" -l 0 -mesg "<span color='$COLOR_RESULT'>$result</span>")"
 	esac
 done
