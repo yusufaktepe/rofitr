@@ -1,32 +1,5 @@
-#!/usr/bin/env sh
-# Translate text using rofi.
-# Requires: rofi, crow-translate
-# ---
-# 2019 Yusuf Aktepe <yusuf@yusufaktepe.com>
-# https://github.com/yusufaktepe/dotfiles
-# ---
-# Usage:
-#       > source:target text
-#             de:en hallo
-#       > :target text
-#               :es hello world!
-#       > !e word
-#         show examples for "word"
-#       > !!
-#         show last translation
-#       > !!e
-#         show examples for last translation
-#       > !
-#         to select and translate from history
-#       > !d
-#         to select and remove from history
-#         >> !dd
-#            to clear history
-#
-#   If you leave source empty, it'll identify the source
-#   and translate it into :target.
-#   If you leave both empty, default variables will be used.
-# ---
+#!/usr/bin/env bash
+# Copyright (C) 2019 Yusuf Aktepe <yusuf@yusufaktepe.com>
 
 # Default values
 SOURCE="${SOURCE:-en}"
