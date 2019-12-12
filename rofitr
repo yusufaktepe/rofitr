@@ -1,21 +1,32 @@
 #!/usr/bin/env bash
 # Copyright (C) 2019 Yusuf Aktepe <yusuf@yusufaktepe.com>
 
-# Default values
-SOURCE="${SOURCE:-en}"
-TARGET="${TARGET:-tr}"
-ENGINE="${ENGINE:-google}"
-LOCALE="${LOCALE:-${LANG%_*}}"
-# Rofi options
+## Default values
+# SOURCE="en"     # source language code
+# TARGET="tr"     # translation language code
+# ENGINE="google" # google, yandex or bing
+# LOCALE="en"     # translator language ($LANG var. by default)
+
+## Rofi general options
+# leave these empty or comment out to use system defaults:
 FONT="mono 10"
 WIDTH="60"
+LOCATION="2"
 YOFFSET="20"
-HIST_LINES="15"
-RES_LINES="43"
+
+# use alternative config and theme
+# CONFIG="~/.config/rofi/translate-config.rasi"
+# THEME="/usr/share/rofi/themes/lb.rasi"
+
+## Rofi required options
+HIST_LINES="15" # lines to show for history mode
+RES_LINES="42"  # limit output to screen height
 PROMPT_TR=" translate"
 PROMPT_HIST=" history"
 PROMPT_DEL=" delete"
-COLOR_RESULT="#ebdbb2"
+CLR_RESULT="#ebdbb2"    # text color for translation
+CLR_HELP_HLBG="#b8bb26" # help mode highlight background
+CLR_HELP_HLFG="#1d2021" # help mode highlight foreground
 
 HIST="${XDG_DATA_HOME:-~/.local/share}/rofi/rofitr_history"
 mkdir -p "$(dirname "$HIST")"
@@ -23,29 +34,51 @@ mkdir -p "$(dirname "$HIST")"
 help() {
 cat <<EOF
 # <u>Translate with defaults</u>
-> <span background="#b8bb26" foreground="#1d2021"><b><i>text</i></b></span>
+> <span background="$CLR_HELP_HLBG" foreground="$CLR_HELP_HLFG"><b><i>text</i></b></span>
 # <u>Override default SOURCE and TARGET</u>
-> <span background="#b8bb26" foreground="#1d2021"><b>en:es <i>text</i></b></span>
+> <span background="$CLR_HELP_HLBG" foreground="$CLR_HELP_HLFG"><b>en:es <i>text</i></b></span>
 # <u>Auto-detect SOURCE</u>
-> <span background="#b8bb26" foreground="#1d2021"><b>:en <i>text</i></b></span>
+> <span background="$CLR_HELP_HLBG" foreground="$CLR_HELP_HLFG"><b>:en <i>text</i></b></span>
 <s>                                             </s>
 <u>Actions:</u>
-<span foreground="#b8bb26"><b>!e</b></span> <i>word</i> => show examples for "word"
-<span foreground="#b8bb26"><b>!!</b></span>      => show last translation
-<span foreground="#b8bb26"><b>!!e</b></span>     => show examples for last translation
-<span foreground="#b8bb26"><b>!</b></span>       => select and translate from history
-<span foreground="#b8bb26"><b>!d</b></span>      => select and remove from history
-<span foreground="#b8bb26"><b>!dd</b></span>     => clear history (in delete mode)
+<span foreground="$CLR_HELP_HLBG"><b>!e</b></span> <i>word</i> => show examples for "word"
+<span foreground="$CLR_HELP_HLBG"><b>!!</b></span>      => show last translation
+<span foreground="$CLR_HELP_HLBG"><b>!!e</b></span>     => show examples for last translation
+<span foreground="$CLR_HELP_HLBG"><b>!</b></span>       => select and translate from history
+<span foreground="$CLR_HELP_HLBG"><b>!d</b></span>      => select and remove from history
+<span foreground="$CLR_HELP_HLBG"><b>!dd</b></span>     => clear history (in delete mode)
+<s>                                             </s>
+<u>Command line:</u>
+$ rofitr options/text
 EOF
 }
 
-rofi_cmd() { rofi -dmenu -width "$WIDTH" -yoffset "$YOFFSET" -font "$FONT" "$@" ;}
+rofi_cmd() {
+	[ -n "$CONFIG" ] && params+=(-config "$CONFIG")
+	[ -n "$THEME" ] && params+=(-theme "$THEME")
+	[ -n "$WIDTH" ] && params+=(-width "$WIDTH")
+	[ -n "$LOCATION" ] && params+=(-location "$LOCATION")
+	[ -n "$YOFFSET" ] && params+=(-yoffset "$YOFFSET")
+	[ -n "$FONT" ] && params+=(-font "$FONT")
+
+	rofi -dmenu "${params[@]}" "$@"
+}
+
+crow_cmd() { crow -e "${ENGINE:-google}" -l "${LOCALE:-${LANG%_*}}" "$@" ;}
+
+cleanup() {
+	sedit="s/^[\t]$//;/^$/d;s/\&/\&amp\;/g"
+	case "$1" in
+		ex) sed -e "$sedit" -ne '/- examples:/,$p' | head -n $RES_LINES ;;
+		*) sed -e "$sedit" -e '/- examples:/Q' | sed -z 's/\n/ /' | head -n $RES_LINES
+	esac
+}
 
 [ -n "$*" ] && input="$*" || input="$(rofi_cmd -p "$PROMPT_TR" -l 0)"
 
 while [ -n "$input" ]; do
 	case "$input" in
-		"?")	input="$(rofi_cmd -p "Usage" -l 0 -mesg "<span color='$COLOR_RESULT'>$(help)</span>")" ;;
+		"?")	input="$(rofi_cmd -p "Usage" -l 0 -mesg "<span color='$CLR_RESULT'>$(help)</span>")" ;;
 		!)	input="$(tac "$HIST" | rofi_cmd -p "$PROMPT_HIST" -l "$HIST_LINES")"
 			[ "$input" = "!" ] && input="$(rofi_cmd -p "$PROMPT_TR" -l 0)" ;;
 		!!)	input=$(tail -n1 "$HIST") ;;
@@ -58,31 +91,23 @@ while [ -n "$input" ]; do
 				*) sed -i "/^$pattern$/d" "$HIST"
 			esac ;;
 		*)
-			cleanup() {
-				sedit="s/^[\t]$//;/^$/d;s/\&/\&amp\;/g"
-				case "$1" in
-					ex) sed -e "$sedit" -ne '/- examples:/,$p' | head -n $RES_LINES ;;
-					*) sed -e "$sedit" -e '/- examples:/Q' | sed -z 's/\n/ /' | head -n $RES_LINES
-				esac
-			}
-
 			case "$input" in
 				??:??*)
 					SOURCE=$(echo "$input" | awk -F':' '{print $1}')
 					TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
 					input=$(echo "$input" | cut -d' ' -f2-)
-					result=$(crow -e "$ENGINE" -l "$LOCALE" -s "$SOURCE" -t "$TARGET" "$input" | cleanup) ;;
+					result=$(crow_cmd -s "${SOURCE:-en}" -t "${TARGET:-tr}" "$input" | cleanup) ;;
 				:??*)
 					TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
 					input=$(echo "$input" | cut -d' ' -f2-)
-					result=$(crow -e "$ENGINE" -l "$LOCALE" -t "$TARGET" "$input" | cleanup) ;;
+					result=$(crow_cmd -t "${TARGET:-tr}" "$input" | cleanup) ;;
 				!e*)
 					input=$(echo "$input" | cut -d' ' -f2-)
-					result=$(crow -e "$ENGINE" -l "$LOCALE" "$input" | cleanup ex) ;;
-				*)	result=$(crow -e "$ENGINE" -l "$LOCALE" -s "$SOURCE" -t "$TARGET" "$input" | cleanup) ;;
+					result=$(crow_cmd "$input" | cleanup ex) ;;
+				*)	result=$(crow_cmd -s "${SOURCE:-en}" -t "${TARGET:-tr}" "$input" | cleanup) ;;
 			esac
 
 			sed -i "/^$input$/d" "$HIST"; printf '%s\n' "$input" >> "$HIST"
-			input="$(rofi_cmd -p "$PROMPT_TR" -l 0 -mesg "<span color='$COLOR_RESULT'>$result</span>")"
+			input="$(rofi_cmd -p "$PROMPT_TR" -l 0 -mesg "<span color='$CLR_RESULT'>$result</span>")"
 	esac
 done
