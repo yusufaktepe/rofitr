@@ -92,7 +92,7 @@ while [ -n "$input" ]; do
 			esac ;;
 		*)
 			case "$input" in
-				??:??*)
+				??*:??*)
 					SOURCE=$(echo "$input" | awk -F':' '{print $1}')
 					TARGET=$(echo "$input" | awk -F'[:| ]' '{print $2}')
 					input=$(echo "$input" | cut -d' ' -f2-)
