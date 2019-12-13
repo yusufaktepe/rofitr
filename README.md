@@ -13,8 +13,10 @@ A bash script to translate text using rofi.
 <tr><td><i>text</i></td><td>Translate with defaults</td></tr>
 <tr><th colspan="2"><strong>Actions</strong></th></tr><tr><td><strong>Keyword</strong></td><td><strong>Description</strong></td></tr>
 <tr><td><code>!e word</code></td><td>show examples for "word"</td></tr>
+<tr><td><code>!s text</code></td><td>speak the "text"</td></tr>
 <tr><td><code>!!</code></td><td>show last translation</td></tr>
 <tr><td><code>!!e</code></td><td>show examples for last translation</td></tr>
+<tr><td><code>!!s</code></td><td>speak last translation</td></tr>
 <tr><td><code>!</code></td><td>select and translate from history</td></tr>
 <tr><td><code>!d</code></td><td>select and delete from history</td></tr>
 <tr><td><code>!dd</code></td><td>clear history (in delete mode)</td></tr>
@@ -37,11 +39,13 @@ SOURCE=en TARGET=ru rofitr
 ```
 Following options are configurable:
 ```
-## Default values
-SOURCE="en"     # source language code
-TARGET="es"     # translation language code
-ENGINE="google" # google, yandex or bing
-LOCALE="en"     # translator language ($LANG var. by default)
+## Set defaults
+# SOURCE="en"               # source language code
+# TARGET="es"               # translation language code
+# ENGINE="google"           # google, yandex or bing
+# LOCALE="en"               # translator language ($LANG var. by default)
+# SPEAK_SOURCE="false"      # speak the source (true/false)
+# SPEAK_TRANSLATION="false" # speak the translation (true/false)
 
 ## Rofi general options
 # leave these empty or comment out to use system defaults:

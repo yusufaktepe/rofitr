@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # Copyright (C) 2019 Yusuf Aktepe <yusuf@yusufaktepe.com>
 
-## Default values
-# SOURCE="en"     # source language code
-# TARGET="tr"     # translation language code
-# ENGINE="google" # google, yandex or bing
-# LOCALE="en"     # translator language ($LANG var. by default)
+## Set defaults
+# SOURCE="en"               # source language code
+# TARGET="tr"               # translation language code
+# ENGINE="google"           # google, yandex or bing
+# LOCALE="en"               # translator language ($LANG var. by default)
+# SPEAK_SOURCE="false"      # speak the source (true/false)
+# SPEAK_TRANSLATION="false" # speak the translation (true/false)
 
 ## Rofi general options
 # leave these empty or comment out to use system defaults:
@@ -42,8 +44,10 @@ cat <<EOF
 <s>                                             </s>
 <u>Actions:</u>
 <span foreground="$CLR_HELP_HLBG"><b>!e</b></span> <i>word</i> => show examples for "word"
+<span foreground="$CLR_HELP_HLBG"><b>!s</b></span> <i>text</i> => speak the "text"
 <span foreground="$CLR_HELP_HLBG"><b>!!</b></span>      => show last translation
 <span foreground="$CLR_HELP_HLBG"><b>!!e</b></span>     => show examples for last translation
+<span foreground="$CLR_HELP_HLBG"><b>!!s</b></span>     => speak last translation
 <span foreground="$CLR_HELP_HLBG"><b>!</b></span>       => select and translate from history
 <span foreground="$CLR_HELP_HLBG"><b>!d</b></span>      => select and remove from history
 <span foreground="$CLR_HELP_HLBG"><b>!dd</b></span>     => clear history (in delete mode)
@@ -64,12 +68,20 @@ rofi_cmd() {
 	rofi -dmenu "${params[@]}" "$@"
 }
 
-crow_cmd() { crow -e "${ENGINE:-google}" -l "${LOCALE:-${LANG%_*}}" "$@" ;}
+crow_cmd() {
+	[ -n "$ENGINE" ] && crowparams+=(-e "$ENGINE")
+	[ -n "$LOCALE" ] && crowparams+=(-l "$LOCALE")
+	[ "$SPEAK_TRANSLATION" = "true" ] && crowparams+=(-p)
+	[ "$SPEAK_SOURCE" = "true" ] && crowparams+=(-u)
+
+	crow "${crowparams[@]}" "$@"
+}
 
 cleanup() {
 	sedit="s/^[\t]$//;/^$/d;s/\&/\&amp\;/g"
 	case "$1" in
 		ex) sed -e "$sedit" -ne '/- examples:/,$p' | head -n $RES_LINES ;;
+		s) sed -e "$sedit" | sed -z 's/\n*(/ (/'| head -n $RES_LINES ;;
 		*) sed -e "$sedit" -e '/- examples:/Q' | sed -z 's/\n*(/ (/' | head -n $RES_LINES
 	esac
 }
@@ -83,6 +95,7 @@ while [ -n "$input" ]; do
 			[ "$input" = "!" ] && input="$(rofi_cmd -p "$PROMPT_TR" -l 0)" ;;
 		!!)	input=$(tail -n1 "$HIST") ;;
 		!!e)	input=$(printf "!e %s" "$(tail -n1 "$HIST")") ;;
+		!!s)	input=$(printf "!s %s" "$(tail -n1 "$HIST")") ;;
 		!d)	pattern="$(tac "$HIST" | rofi_cmd -p "$PROMPT_DEL" -l "$HIST_LINES")"
 			case "$pattern" in
 				!) input="$(rofi_cmd -p "$PROMPT_TR" -l 0)" ;;
@@ -106,6 +119,9 @@ while [ -n "$input" ]; do
 				!e*)
 					input=$(echo "$input" | cut -d' ' -f2-)
 					result=$(crow_cmd "$input" | cleanup ex) ;;
+				!s*)
+					input=$(echo "$input" | cut -d' ' -f2-)
+					result=$(SPEAK_SOURCE="true" crow_cmd "$input" | cleanup s) ;;
 				*)	result=$(crow_cmd -s "${SOURCE:-en}" -t "${TARGET:-tr}" "$input" | cleanup) ;;
 			esac
 
