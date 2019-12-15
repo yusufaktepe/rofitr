@@ -100,6 +100,15 @@ cklang() {
 	printf '%s\n' "${lslang[@]}" | grep -x "$1"
 }
 
+append_hist() {
+	sed -i "/^$input$/d" "$HIST"
+	printf '%s\n' "$input" >> "$HIST"
+}
+
+return_result() {
+	input="$(rofi_cmd -p "$PROMPT_TR" -l 0 -mesg "<span color='$CLR_RESULT'>$result</span>")"
+}
+
 [ -n "$*" ] && input="$*" || input="$(rofi_cmd -p "$PROMPT_TR" -l 0)"
 
 while [ -n "$input" ]; do
@@ -117,29 +126,29 @@ while [ -n "$input" ]; do
 				"") exit 0 ;;
 				*) sed -i "/^$pattern$/d" "$HIST"
 			esac ;;
+		??*:??*)
+			SOURCE=$(cklang "$(echo "$input" | awk -F':' '{print $1}')")
+			TARGET=$(cklang "$(echo "$input" | awk -F'[:| ]' '{print $2}')")
+			input=$(echo "$input" | cut -d' ' -f2-)
+			result=$(crow_cmd -s "${SOURCE:-en}" -t "${TARGET:-tr}" "$input" | cleanup)
+			unset SOURCE TARGET
+			append_hist; return_result ;;
+		:??*)
+			TARGET=$(cklang "$(echo "$input" | awk -F'[:| ]' '{print $2}')")
+			input=$(echo "$input" | cut -d' ' -f2-)
+			result=$(crow_cmd -t "${TARGET:-tr}" "$input" | cleanup)
+			unset TARGET
+			append_hist; return_result ;;
+		!e*)
+			input=$(echo "$input" | cut -d' ' -f2-)
+			result=$(crow_cmd "$input" | cleanup ex)
+			append_hist; return_result ;;
+		!s*)
+			input=$(echo "$input" | cut -d' ' -f2-)
+			result=$(SPEAK_SOURCE="true" crow_cmd "$input" | cleanup s)
+			append_hist; return_result ;;
 		*)
-			case "$input" in
-				??*:??*)
-					SOURCE=$(cklang "$(echo "$input" | awk -F':' '{print $1}')")
-					TARGET=$(cklang "$(echo "$input" | awk -F'[:| ]' '{print $2}')")
-					input=$(echo "$input" | cut -d' ' -f2-)
-					result=$(crow_cmd -s "${SOURCE:-en}" -t "${TARGET:-tr}" "$input" | cleanup)
-					unset SOURCE TARGET ;;
-				:??*)
-					TARGET=$(cklang "$(echo "$input" | awk -F'[:| ]' '{print $2}')")
-					input=$(echo "$input" | cut -d' ' -f2-)
-					result=$(crow_cmd -t "${TARGET:-tr}" "$input" | cleanup)
-					unset TARGET ;;
-				!e*)
-					input=$(echo "$input" | cut -d' ' -f2-)
-					result=$(crow_cmd "$input" | cleanup ex) ;;
-				!s*)
-					input=$(echo "$input" | cut -d' ' -f2-)
-					result=$(SPEAK_SOURCE="true" crow_cmd "$input" | cleanup s) ;;
-				*)	result=$(crow_cmd -s "${SOURCE:-en}" -t "${TARGET:-tr}" "$input" | cleanup) ;;
-			esac
-
-			sed -i "/^$input$/d" "$HIST"; printf '%s\n' "$input" >> "$HIST"
-			input="$(rofi_cmd -p "$PROMPT_TR" -l 0 -mesg "<span color='$CLR_RESULT'>$result</span>")"
+			result=$(crow_cmd -s "${SOURCE:-en}" -t "${TARGET:-tr}" "$input" | cleanup)
+			append_hist; return_result ;;
 	esac
 done
