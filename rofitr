@@ -53,7 +53,8 @@ cat <<EOF
 <span foreground="$CLR_HELP_HLBG"><b>!dd</b></span>     => clear history (in delete mode)
 <s>                                             </s>
 <u>Command line:</u>
-$ rofitr options/text
+$ rofitr :ru <i>text</i> <span foreground="$CLR_HELP_HLBG">=> </span>Translate into Russian
+$ rofitr -s       <span foreground="$CLR_HELP_HLBG">=> </span>Translate from primary selection
 EOF
 }
 
@@ -146,6 +147,10 @@ while [ -n "$input" ]; do
 		!s*)
 			input=$(echo "$input" | cut -d' ' -f2-)
 			result=$(SPEAK_SOURCE="true" crow_cmd "$input" | cleanup s)
+			append_hist; return_result ;;
+		-s)
+			input=$(xclip -o); [ -z "$input" ] && exit
+			result=$(crow_cmd -t "${TARGET:-tr}" "$input" | cleanup)
 			append_hist; return_result ;;
 		*)
 			result=$(crow_cmd -s "${SOURCE:-en}" -t "${TARGET:-tr}" "$input" | cleanup)
