@@ -23,9 +23,19 @@ A bash script to translate text using rofi.
 </tbody>
 </table>
 
-Command line:
-> $ rofitr options/text
-
+#### Command line:
+- Launch rofitr:
+```
+$ rofitr
+```
+- Translate into Russian:
+```
+$ rofitr :ru text
+```
+- Translate from primary selection (clipboard):
+```
+$ rofitr -s
+```
 
 ## Requirements
 * [rofi](https://github.com/davatorium/rofi)
