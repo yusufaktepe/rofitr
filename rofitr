@@ -131,29 +131,29 @@ while [ -n "$input" ]; do
 			SOURCE=$(cklang "$(echo "$input" | awk -F':' '{print $1}')")
 			TARGET=$(cklang "$(echo "$input" | awk -F'[:| ]' '{print $2}')")
 			input=$(echo "$input" | cut -d' ' -f2-)
-			result=$(crow_cmd -s "${SOURCE:-en}" -t "${TARGET:-tr}" "$input" | cleanup)
+			result=$(crow_cmd -s "${SOURCE:-en}" -t "${TARGET:-tr}" -- "$input" | cleanup)
 			unset SOURCE TARGET
 			append_hist; return_result ;;
 		:??*)
 			TARGET=$(cklang "$(echo "$input" | awk -F'[:| ]' '{print $2}')")
 			input=$(echo "$input" | cut -d' ' -f2-)
-			result=$(crow_cmd -t "${TARGET:-tr}" "$input" | cleanup)
+			result=$(crow_cmd -t "${TARGET:-tr}" -- "$input" | cleanup)
 			unset TARGET
 			append_hist; return_result ;;
 		!e*)
 			input=$(echo "$input" | cut -d' ' -f2-)
-			result=$(crow_cmd "$input" | cleanup ex)
+			result=$(crow_cmd -- "$input" | cleanup ex)
 			append_hist; return_result ;;
 		!s*)
 			input=$(echo "$input" | cut -d' ' -f2-)
-			result=$(SPEAK_SOURCE="true" crow_cmd "$input" | cleanup s)
+			result=$(SPEAK_SOURCE="true" crow_cmd -- "$input" | cleanup s)
 			append_hist; return_result ;;
 		-s)
 			input=$(xclip -o); [ -z "$input" ] && exit
-			result=$(crow_cmd -t "${TARGET:-tr}" "$input" | cleanup)
+			result=$(crow_cmd -t "${TARGET:-tr}" -- "$input" | cleanup)
 			append_hist; return_result ;;
 		*)
-			result=$(crow_cmd -s "${SOURCE:-en}" -t "${TARGET:-tr}" "$input" | cleanup)
+			result=$(crow_cmd -s "${SOURCE:-en}" -t "${TARGET:-tr}" -- "$input" | cleanup)
 			append_hist; return_result ;;
 	esac
 done
