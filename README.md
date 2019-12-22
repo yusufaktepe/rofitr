@@ -2,7 +2,7 @@
 
 A bash script to translate text using rofi.
 
-![rofitr](https://pub.yusufaktepe.com/git/rofitr.gif "rofitr in action")
+![rofitr](https://user-images.githubusercontent.com/32964025/85084679-35b2fc80-b1de-11ea-9f89-ffc51e546253.gif "rofitr in action")
 
 ## Usage
 <table>
@@ -20,6 +20,7 @@ A bash script to translate text using rofi.
 <tr><td><code>!</code></td><td>select and translate from history</td></tr>
 <tr><td><code>!d</code></td><td>select and delete from history</td></tr>
 <tr><td><code>!dd</code></td><td>clear history (in delete mode)</td></tr>
+<tr><td><code>?</code></td><td>display usage</td></tr>
 </tbody>
 </table>
 
@@ -74,7 +75,7 @@ RES_LINES="42"  # limit output to screen height
 PROMPT_TR=" translate"
 PROMPT_HIST=" history"
 PROMPT_DEL=" delete"
-CLR_RESULT="#ebdbb2"    # text color for translation
-CLR_HELP_HLBG="#b8bb26" # help mode highlight background
-CLR_HELP_HLFG="#1d2021" # help mode highlight foreground
+CLR_RESULT="#ebdbb2" # text color for translation
+CLR1="#b8bb26"
+CLR2="#1d2021"
 ```

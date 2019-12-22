@@ -26,9 +26,9 @@ RES_LINES="42"  # limit output to screen height
 PROMPT_TR=" translate"
 PROMPT_HIST=" history"
 PROMPT_DEL=" delete"
-CLR_RESULT="#ebdbb2"    # text color for translation
-CLR_HELP_HLBG="#b8bb26" # help mode highlight background
-CLR_HELP_HLFG="#1d2021" # help mode highlight foreground
+CLR_RESULT="#ebdbb2" # text color for translation
+CLR1="#b8bb26"
+CLR2="#1d2021"
 
 HIST="${XDG_DATA_HOME:-~/.local/share}/rofi/rofitr_history"
 mkdir -p "$(dirname "$HIST")"
@@ -36,25 +36,25 @@ mkdir -p "$(dirname "$HIST")"
 help() {
 cat <<EOF
 # <u>Translate with defaults</u>
-> <span background="$CLR_HELP_HLBG" foreground="$CLR_HELP_HLFG"><b><i>text</i></b></span>
+> <span background="$CLR1" foreground="$CLR2"><b><i>text</i></b></span>
 # <u>Override default SOURCE and TARGET</u>
-> <span background="$CLR_HELP_HLBG" foreground="$CLR_HELP_HLFG"><b>en:es <i>text</i></b></span>
+> <span background="$CLR1" foreground="$CLR2"><b>en:es <i>text</i></b></span>
 # <u>Auto-detect SOURCE</u>
-> <span background="$CLR_HELP_HLBG" foreground="$CLR_HELP_HLFG"><b>:en <i>text</i></b></span>
+> <span background="$CLR1" foreground="$CLR2"><b>:en <i>text</i></b></span>
 <s>                                             </s>
 <u>Actions:</u>
-<span foreground="$CLR_HELP_HLBG"><b>!e</b></span> <i>word</i> => show examples for "word"
-<span foreground="$CLR_HELP_HLBG"><b>!s</b></span> <i>text</i> => speak the "text"
-<span foreground="$CLR_HELP_HLBG"><b>!!</b></span>      => show last translation
-<span foreground="$CLR_HELP_HLBG"><b>!!e</b></span>     => show examples for last translation
-<span foreground="$CLR_HELP_HLBG"><b>!!s</b></span>     => speak last translation
-<span foreground="$CLR_HELP_HLBG"><b>!</b></span>       => select and translate from history
-<span foreground="$CLR_HELP_HLBG"><b>!d</b></span>      => select and remove from history
-<span foreground="$CLR_HELP_HLBG"><b>!dd</b></span>     => clear history (in delete mode)
+<span foreground="$CLR1"><b>!e</b></span> <i>word</i> => show examples for "word"
+<span foreground="$CLR1"><b>!s</b></span> <i>text</i> => speak the "text"
+<span foreground="$CLR1"><b>!!</b></span>      => show last translation
+<span foreground="$CLR1"><b>!!e</b></span>     => show examples for last translation
+<span foreground="$CLR1"><b>!!s</b></span>     => speak last translation
+<span foreground="$CLR1"><b>!</b></span>       => select and translate from history
+<span foreground="$CLR1"><b>!d</b></span>      => select and remove from history
+<span foreground="$CLR1"><b>!dd</b></span>     => clear history (in delete mode)
 <s>                                             </s>
 <u>Command line:</u>
-$ rofitr :ru <i>text</i> <span foreground="$CLR_HELP_HLBG">=> </span>Translate into Russian
-$ rofitr -s       <span foreground="$CLR_HELP_HLBG">=> </span>Translate from primary selection
+$ rofitr :ru <i>text</i> <span foreground="$CLR1">=> </span>Translate into Russian
+$ rofitr -s       <span foreground="$CLR1">=> </span>Translate from primary selection
 EOF
 }
 
@@ -78,12 +78,14 @@ crow_cmd() {
 	crow "${crowparams[@]}" "$@"
 }
 
-cleanup() {
-	sedit="s/^[\t]$//;/^$/d;s/\&/\&amp\;/g"
+format() {
+	clean="s/^[\t]$//;/^$/d;s/\&/\&amp\;/g;/ - translation options:$/d"
+	bold="s/^\(auxiliary verb\|abbreviation\|adjective\|adverb\|article\|conjunction\|contraction\|exclamation\|interjection\|noun\|particle\|prefix\|preposition\|pronoun\|suffix\|symbol\|verb\)$/<b>&<\/b>/"
+	trl="s/^\[ .*->.* \]$/<span foreground=\"$CLR1\"><i>&<\/i><\/span>/"
 	case "$1" in
-		ex) sed -e "$sedit" -ne '/- examples:/,$p' | head -n $RES_LINES ;;
-		s) sed -e "$sedit" | sed -z 's/\n*(/ (/'| head -n $RES_LINES ;;
-		*) sed -e "$sedit" -e '/- examples:/Q' | sed -z 's/\n*(/ (/' | head -n $RES_LINES
+		ex) sed -e "$clean" -e '1,/ - examples:$/d' -e "$bold" | head -n $RES_LINES ;;
+		sel) sed -e "$clean" -e '/ - examples:$/d' -e "$bold" -e "$trl" | sed -z 's/\n*(/ (/' | head -n $RES_LINES ;;
+		*) sed -e "$clean" -e '/- examples:$/Q' -e "$bold" -e "$trl" | sed -z 's/\n*(/ (/' | head -n $RES_LINES
 	esac
 }
 
@@ -133,29 +135,29 @@ while [ -n "$input" ]; do
 			SOURCE=$(cklang "$(echo "$input" | awk -F':' '{print $1}')")
 			TARGET=$(cklang "$(echo "$input" | awk -F'[:| ]' '{print $2}')")
 			input=$(echo "$input" | cut -d' ' -f2-)
-			result=$(crow_cmd -s "${SOURCE:-en}" -t "${TARGET:-tr}" -- "$input" | cleanup)
+			result=$(crow_cmd -s "${SOURCE:-en}" -t "${TARGET:-tr}" -- "$input" | format)
 			unset SOURCE TARGET
 			append_hist; return_result ;;
 		:??*)
 			TARGET=$(cklang "$(echo "$input" | awk -F'[:| ]' '{print $2}')")
 			input=$(echo "$input" | cut -d' ' -f2-)
-			result=$(crow_cmd -t "${TARGET:-tr}" -- "$input" | cleanup)
+			result=$(crow_cmd -t "${TARGET:-tr}" -- "$input" | format)
 			unset TARGET
 			append_hist; return_result ;;
 		!e*)
 			input=$(echo "$input" | cut -d' ' -f2-)
-			result=$(crow_cmd -- "$input" | cleanup ex)
+			result=$(crow_cmd -- "$input" | format ex)
 			append_hist; return_result ;;
 		!s*)
 			input=$(echo "$input" | cut -d' ' -f2-)
-			result=$(SPEAK_SOURCE="true" crow_cmd -- "$input" | cleanup s)
+			result=$(SPEAK_SOURCE="true" crow_cmd -- "$input" | format sel)
 			append_hist; return_result ;;
 		-s)
 			input=$(xclip -o | tr -d '\n'); [ -z "$input" ] && exit
-			result=$(crow_cmd -t "${TARGET:-tr}" -- "$input" | cleanup)
+			result=$(crow_cmd -t "${TARGET:-tr}" -- "$input" | format)
 			append_hist; return_result ;;
 		*)
-			result=$(crow_cmd -s "${SOURCE:-en}" -t "${TARGET:-tr}" -- "$input" | cleanup)
+			result=$(crow_cmd -s "${SOURCE:-en}" -t "${TARGET:-tr}" -- "$input" | format)
 			append_hist; return_result ;;
 	esac
 done
