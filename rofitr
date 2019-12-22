@@ -101,8 +101,10 @@ cklang() {
 	printf '%s\n' "${lslang[@]}" | grep -x "$1"
 }
 
+esc() { sed 's|[][\\/.*^$]|\\&|g' <<< "$1" ;}
+
 append_hist() {
-	sed -i "/^${input//\//\\/}$/d" "$HIST"
+	sed -i "/^$(esc "$input")$/d" "$HIST"
 	printf '%s\n' "$input" >> "$HIST"
 }
 
@@ -125,7 +127,7 @@ while [ -n "$input" ]; do
 				!) input="$(rofi_cmd -p "$PROMPT_TR" -l 0)" ;;
 				!dd) printf '' > "$HIST" && exit 0 ;;
 				"") exit 0 ;;
-				*) sed -i "/^${pattern//\//\\/}$/d" "$HIST"
+				*) sed -i "/^$(esc "$pattern")$/d" "$HIST"
 			esac ;;
 		??*:??*)
 			SOURCE=$(cklang "$(echo "$input" | awk -F':' '{print $1}')")
