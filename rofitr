@@ -79,9 +79,9 @@ crow_cmd() {
 }
 
 format() {
-	clean="s/^[\t]$//;/^$/d;s/\&/\&amp\;/g;/ - translation options:$/d"
+	clean="s/^[\t]$//;/^$/d;s/\&/\&amp\;/g;s/</\&lt\;/g;s/>/\&gt\;/g;/ - translation options:$/d"
 	bold="s/^\(auxiliary verb\|abbreviation\|adjective\|adverb\|article\|conjunction\|contraction\|exclamation\|interjection\|noun\|particle\|prefix\|preposition\|pronoun\|suffix\|symbol\|verb\)$/<b>&<\/b>/"
-	trl="s/^\[ .*->.* \]$/<span foreground=\"$CLR1\"><i>&<\/i><\/span>/"
+	trl="s/^\[ .*-\&gt\;.* \]$/<span foreground=\"$CLR1\"><i>&<\/i><\/span>/"
 	case "$1" in
 		ex) sed -e "$clean" -e "$bold" -ne '/- examples:/,$p' | head -n $RES_LINES ;;
 		sel) sed -e "$clean" -e '/ - examples:$/d' -e "$bold" -e "$trl" | sed -z 's/\n*(/ (/' | head -n $RES_LINES ;;
